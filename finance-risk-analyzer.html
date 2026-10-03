@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RISKLEDGER — Finance Risk & Comparison Analyzer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0F1C;
+    --panel:#121A2B;
+    --panel-2:#0E1522;
+    --border:#223049;
+    --text:#E9EDF4;
+    --muted:#8C96AC;
+    --teal:#2DD4A7;
+    --amber:#F2B84B;
+    --red:#FF6B6B;
+    --accent-line:#1B2740;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  ::selection{background:var(--teal); color:#081310;}
+  .wrap{max-width:1180px; margin:0 auto; padding:32px 24px 80px;}
+
+  /* HEADER */
+  header{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:1px solid var(--border);
+    padding-bottom:20px; margin-bottom:28px;
+  }
+  .brand{display:flex; flex-direction:column; gap:4px;}
+  .brand .mark{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:26px;
+    letter-spacing:0.5px;
+  }
+  .brand .mark span{color:var(--teal);}
+  .brand .sub{color:var(--muted); font-size:13px; font-family:'IBM Plex Mono',monospace;}
+  .ticker{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted);
+    text-align:right; line-height:1.6;
+  }
+  .ticker b{color:var(--text);}
+
+  /* TABS */
+  .tabs{display:flex; gap:2px; margin-bottom:24px; border:1px solid var(--border); border-radius:10px; overflow:hidden; width:fit-content;}
+  .tab{
+    padding:12px 20px; cursor:pointer; background:var(--panel-2); color:var(--muted);
+    font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:500;
+    display:flex; align-items:center; gap:8px; transition:background .15s, color .15s;
+    border-right:1px solid var(--border);
+  }
+  .tab:last-child{border-right:none;}
+  .tab .code{color:var(--teal); font-weight:600;}
+  .tab:hover{background:#182337; color:var(--text);}
+  .tab.active{background:var(--panel); color:var(--text);}
+  .tab.active .code{color:var(--amber);}
+
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .grid{display:grid; grid-template-columns:380px 1fr; gap:24px;}
+  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px;
+  }
+  .card h3{
+    font-family:'Space Grotesk',sans-serif; font-size:15px; margin:0 0 16px; font-weight:600;
+    display:flex; align-items:center; gap:8px; color:var(--text);
+  }
+  .card h3 small{color:var(--muted); font-weight:400; font-family:'IBM Plex Mono',monospace; font-size:11px;}
+
+  label{display:block; font-size:12px; color:var(--muted); margin:12px 0 5px; font-family:'IBM Plex Mono',monospace;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], input[type=number], select{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); border-radius:7px;
+    padding:9px 11px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:13px;
+    outline:none;
+  }
+  input:focus, select:focus{border-color:var(--teal);}
+  select{appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0 L5 6 L10 0' fill='none' stroke='%238C96AC' stroke-width='1.4'/></svg>"); background-repeat:no-repeat; background-position:right 12px center;}
+
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  button.primary{
+    margin-top:18px; width:100%; padding:11px; border-radius:7px; border:none;
+    background:var(--teal); color:#081310; font-weight:600; font-family:'Space Grotesk',sans-serif;
+    font-size:14px; cursor:pointer; transition:filter .15s;
+  }
+  button.primary:hover{filter:brightness(1.08);}
+  button.ghost{
+    margin-top:10px; width:100%; padding:9px; border-radius:7px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px; cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--teal); color:var(--teal);}
+
+  .entries{margin-top:16px; display:flex; flex-direction:column; gap:8px;}
+  .entry-chip{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:7px; padding:8px 12px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px;
+  }
+  .entry-chip .name{color:var(--text);}
+  .entry-chip .del{color:var(--red); cursor:pointer; font-weight:600; padding:0 4px;}
+
+  /* RESULTS */
+  .empty-state{
+    height:100%; min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:var(--muted); text-align:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:13px;
+    border:1px dashed var(--border); border-radius:12px; padding:40px 20px;
+  }
+  .empty-state .big{font-family:'Space Grotesk',sans-serif; font-size:16px; color:var(--text);}
+
+  table{width:100%; border-collapse:collapse; font-family:'IBM Plex Mono',monospace; font-size:12.5px;}
+  th{
+    text-align:left; color:var(--muted); font-weight:500; font-size:11px; text-transform:uppercase;
+    letter-spacing:0.4px; padding:8px 10px; border-bottom:1px solid var(--border);
+  }
+  td{padding:10px 10px; border-bottom:1px solid var(--accent-line); vertical-align:middle;}
+  tr.best td{background:rgba(45,212,167,0.06);}
+  tr.best td:first-child{border-left:2px solid var(--teal);}
+  .num{text-align:right; font-variant-numeric:tabular-nums;}
+  .tag{
+    display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600;
+  }
+  .tag.low{background:rgba(45,212,167,0.15); color:var(--teal);}
+  .tag.mod{background:rgba(242,184,75,0.15); color:var(--amber);}
+  .tag.high{background:rgba(255,107,107,0.15); color:var(--red);}
+
+  .result-cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px; margin-top:18px;}
+  .rcard{background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:16px; position:relative;}
+  .rcard.best{border-color:var(--teal);}
+  .rcard .best-badge{
+    position:absolute; top:-9px; right:14px; background:var(--teal); color:#081310; font-size:10px;
+    font-weight:700; padding:2px 8px; border-radius:20px; font-family:'IBM Plex Mono',monospace;
+  }
+  .rcard .rname{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; margin-bottom:2px;}
+  .rcard .rtype{color:var(--muted); font-size:11px; font-family:'IBM Plex Mono',monospace; margin-bottom:12px;}
+  .gauge-wrap{display:flex; align-items:center; gap:12px;}
+  .gauge-num{font-family:'IBM Plex Mono',monospace;}
+  .gauge-num .val{font-size:20px; font-weight:600;}
+  .gauge-num .lbl{font-size:10px; color:var(--muted); text-transform:uppercase;}
+
+  .verdict{
+    margin-top:18px; padding:14px 16px; border-radius:10px; border:1px solid var(--border);
+    background:var(--panel-2); font-size:13px; line-height:1.6; color:var(--text);
+  }
+  .verdict b{color:var(--teal);}
+  .verdict .warn{color:var(--red);}
+
+  footer{margin-top:40px; text-align:center; color:var(--muted); font-size:11px; font-family:'IBM Plex Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">RISK<span>LEDGER</span></div>
+      <div class="sub">// paste in the numbers, get the risk read</div>
+    </div>
+    <div class="ticker">
+      NO DATA STORED SERVER-SIDE<br>
+      ALL CALCULATIONS RUN LOCALLY IN-BROWSER
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="inv"><span class="code">INV</span> Investments</div>
+    <div class="tab" data-tab="loan"><span class="code">LN</span> Loans &amp; Credit</div>
+    <div class="tab" data-tab="biz"><span class="code">BIZ</span> Business Financials</div>
+  </div>
+
+  <!-- ============ INVESTMENTS ============ -->
+  <div class="panel active" id="panel-inv">
+    <div class="grid">
+      <div class="card">
+        <h3>Add a product <small>// return, volatility, cost</small></h3>
+        <label>Product name</label>
+        <input type="text" id="inv-name" placeholder="e.g. HDFC Flexi Cap Fund">
+        <label>Type</label>
+        <select id="inv-type">
+          <option>Equity Mutual Fund</option>
+          <option>Debt Mutual Fund</option>
+          <option>Hybrid Fund</option>
+          <option>Direct Stock</option>
+          <option>ULIP / Insurance-linked</option>
+          <option>Fixed Deposit</option>
+          <option>Gold / ETF</option>
+          <option>Bond</option>
+          <option>Other</option>
+        </select>
+        <div class="row2">
+          <div>
+            <label>Expected return (%/yr)</label>
+            <input type="number" id="inv-return" placeholder="12">
+          </div>
+          <div>
+            <label>Expense/charges (%/yr)</label>
+            <input type="number" id="inv-expense" placeholder="1.5">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Volatility</label>
+            <select id="inv-vol">
+              <option value="1">Low</option>
+              <option value="2" selected>Medium</option>
+              <option value="3">High</option>
+              <option value="4">Very High</option>
+            </select>
+          </div>
+          <div>
+            <label>Lock-in (years)</label>
+            <input type="number" id="inv-lockin" placeholder="0">
+          </div>
+        </div>
+        <button class="primary" onclick="addInvestment()">Add to comparison</button>
+        <div class="entries" id="inv-entries"></div>
+      </div>
+      <div id="inv-results"></div>
+    </div>
+  </div>
+
+  <!-- ============ LOANS ============ -->
+  <div class="panel" id="panel-loan">
+    <div class="grid">
+      <div class="card">
+        <h3>Add a loan offer <small>// EMI, cost, affordability</small></h3>
+        <label>Lender / offer name</label>
+        <input type="text" id="loan-name" placeholder="e.g. SBI Home Loan">
+        <div class="row2">
+          <div>
+            <label>Principal amount</label>
+            <input type="number" id="loan-principal" placeholder="1000000">
+          </div>
+          <div>
+            <label>Interest rate (%/yr)</label>
+            <input type="number" id="loan-rate" placeholder="9.5">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Tenure (years)</label>
+            <input type="number" id="loan-tenure" placeholder="20">
+          </div>
+          <div>
+            <label>Processing fee (%)</label>
+            <input type="number" id="loan-fee" placeholder="1">
+          </div>
+        </div>
+        <label>Your monthly income (for affordability check)</label>
+        <input type="number" id="loan-income" placeholder="80000">
+        <button class="primary" onclick="addLoan()">Add to comparison</button>
+        <div class="entries" id="loan-entries"></div>
+      </div>
+      <div id="loan-results"></div>
+    </div>
+  </div>
+
+  <!-- ============ BUSINESS ============ -->
+  <div class="panel" id="panel-biz">
+    <div class="grid">
+      <div class="card">
+        <h3>Add a company/statement <small>// balance sheet + P&amp;L</small></h3>
+        <label>Company / entity name</label>
+        <input type="text" id="biz-name" placeholder="e.g. Acme Textiles Ltd">
+        <div class="row2">
+          <div>
+            <label>Current assets</label>
+            <input type="number" id="biz-ca" placeholder="500000">
+          </div>
+          <div>
+            <label>Current liabilities</label>
+            <input type="number" id="biz-cl" placeholder="300000">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Total debt</label>
+            <input type="number" id="biz-debt" placeholder="400000">
+          </div>
+          <div>
+            <label>Total equity</label>
+            <input type="number" id="biz-equity" placeholder="600000">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Revenue</label>
+            <input type="number" id="biz-revenue" placeholder="1200000">
+          </div>
+          <div>
+            <label>Net income</label>
+            <input type="number" id="biz-netincome" placeholder="90000">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>EBIT / operating profit</label>
+            <input type="number" id="biz-ebit" placeholder="150000">
+          </div>
+          <div>
+            <label>Interest expense</label>
+            <input type="number" id="biz-interest" placeholder="40000">
+          </div>
+        </div>
+        <button class="primary" onclick="addBusiness()">Add to comparison</button>
+        <div class="entries" id="biz-entries"></div>
+      </div>
+      <div id="biz-results"></div>
+    </div>
+  </div>
+
+  <footer>RISKLEDGER — a rules-based screening tool, not financial advice. Verify with a licensed advisor before acting.</footer>
+</div>
+
+<script>
+/* ---------------- TAB SWITCHING ---------------- */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------------- SHARED HELPERS ---------------- */
+function fmt(n, decimals=1){
+  if(n===undefined||n===null||isNaN(n)) return '—';
+  return Number(n).toLocaleString(undefined,{maximumFractionDigits:decimals, minimumFractionDigits:0});
+}
+function tag(level){
+  const map = {low:['Low','low'], mod:['Moderate','mod'], high:['High','high']};
+  return `<span class="tag ${map[level][1]}">${map[level][0]} risk</span>`;
+}
+function gauge(score, size=64){ // score 0-100, higher = riskier
+  const clamped = Math.max(0,Math.min(100,score));
+  const angle = -90 + (clamped/100)*180;
+  const color = clamped<34 ? 'var(--teal)' : clamped<67 ? 'var(--amber)' : 'var(--red)';
+  const r = size/2 - 6;
+  const cx = size/2, cy = size/2;
+  const rad = (deg)=> (deg-180) * Math.PI/180;
+  const x1 = cx + r*Math.cos(Math.PI); const y1 = cy;
+  const x2 = cx + r*Math.cos(0); const y2 = cy;
+  const needleRad = angle * Math.PI/180;
+  const nx = cx + (r-4)*Math.cos(needleRad - Math.PI/2 + Math.PI/2);
+  return `
+  <svg width="${size}" height="${size/2+10}" viewBox="0 0 ${size} ${size/2+10}">
+    <path d="M 6 ${size/2} A ${r} ${r} 0 0 1 ${size-6} ${size/2}" fill="none" stroke="#223049" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 6 ${size/2} A ${r} ${r} 0 0 1 ${size-6} ${size/2}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"
+      stroke-dasharray="${(clamped/100)*(Math.PI*r)} ${Math.PI*r}"/>
+    <circle cx="${cx}" cy="${size/2}" r="3" fill="${color}"/>
+  </svg>`;
+}
+function riskBand(score){ return score<34?'low':score<67?'mod':'high'; }
+
+/* ================= INVESTMENTS ================= */
+let investments = [];
+function addInvestment(){
+  const name = document.getElementById('inv-name').value.trim();
+  const type = document.getElementById('inv-type').value;
+  const ret = parseFloat(document.getElementById('inv-return').value);
+  const exp = parseFloat(document.getElementById('inv-expense').value)||0;
+  const vol = parseInt(document.getElementById('inv-vol').value);
+  const lockin = parseFloat(document.getElementById('inv-lockin').value)||0;
+  if(!name || isNaN(ret)){ alert('Enter at least a name and expected return.'); return; }
+  investments.push({name,type,ret,exp,vol,lockin});
+  document.getElementById('inv-name').value='';
+  document.getElementById('inv-return').value='';
+  document.getElementById('inv-expense').value='';
+  document.getElementById('inv-lockin').value='';
+  renderInvEntries();
+  renderInvResults();
+}
+function removeInv(i){ investments.splice(i,1); renderInvEntries(); renderInvResults(); }
+function renderInvEntries(){
+  document.getElementById('inv-entries').innerHTML = investments.map((p,i)=>
+    `<div class="entry-chip"><span class="name">${p.name}</span><span class="del" onclick="removeInv(${i})">✕</span></div>`
+  ).join('');
+}
+function computeInv(p){
+  // riskScore 0-100: volatility dominant, expense & lockin add friction
+  const riskScore = Math.min(100, p.vol*20 + p.exp*4 + (p.lockin>5?10:p.lockin>2?5:0));
+  const riskUnit = riskScore/25 || 0.1;
+  const efficiency = (p.ret - p.exp) / riskUnit; // return per unit risk
+  return {...p, riskScore, efficiency};
+}
+function renderInvResults(){
+  const el = document.getElementById('inv-results');
+  if(investments.length===0){
+    el.innerHTML = emptyState('Add products on the left','Enter two or more to see a ranked risk/return comparison.');
+    return;
+  }
+  const computed = investments.map(computeInv).sort((a,b)=>b.efficiency-a.efficiency);
+  const bestName = computed[0].name;
+  let rows = computed.map(p=>{
+    const band = riskBand(p.riskScore);
+    return `<tr class="${p.name===bestName?'best':''}">
+      <td>${p.name}<br><span style="color:var(--muted); font-size:11px;">${p.type}</span></td>
+      <td class="num">${fmt(p.ret)}%</td>
+      <td class="num">${fmt(p.exp)}%</td>
+      <td>${tag(band)}</td>
+      <td class="num">${fmt(p.efficiency,2)}</td>
+    </tr>`;
+  }).join('');
+  let cards = computed.map(p=>{
+    const band = riskBand(p.riskScore);
+    return `<div class="rcard ${p.name===bestName?'best':''}">
+      ${p.name===bestName?'<div class="best-badge">BEST FIT</div>':''}
+      <div class="rname">${p.name}</div>
+      <div class="rtype">${p.type}</div>
+      <div class="gauge-wrap">
+        ${gauge(p.riskScore)}
+        <div class="gauge-num">
+          <div class="val" style="color:${band==='low'?'var(--teal)':band==='mod'?'var(--amber)':'var(--red)'}">${Math.round(p.riskScore)}</div>
+          <div class="lbl">risk / 100</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const top = computed[0];
+  const verdict = computed.length>1
+    ? `Based on return-per-unit-of-risk, <b>${top.name}</b> comes out ahead — ${fmt(top.ret)}% expected return against a risk score of ${Math.round(top.riskScore)}/100. ${top.riskScore>66?'<span class="warn">Note: it still carries high volatility — size the position accordingly.</span>':'That said, always sanity-check volatility against your own time horizon and how soon you might need the money.'}`
+    : `Add one more product to get a real comparison — right now there's nothing to rank ${top.name} against.`;
+
+  el.innerHTML = `
+    <div class="card">
+      <h3>Comparison <small>// ranked by return per unit of risk</small></h3>
+      <table>
+        <thead><tr><th>Product</th><th class="num">Return</th><th class="num">Cost</th><th>Risk</th><th class="num">Efficiency</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="result-cards">${cards}</div>
+      <div class="verdict">${verdict}</div>
+    </div>`;
+}
+
+/* ================= LOANS ================= */
+let loans = [];
+function addLoan(){
+  const name = document.getElementById('loan-name').value.trim();
+  const P = parseFloat(document.getElementById('loan-principal').value);
+  const rate = parseFloat(document.getElementById('loan-rate').value);
+  const years = parseFloat(document.getElementById('loan-tenure').value);
+  const fee = parseFloat(document.getElementById('loan-fee').value)||0;
+  const income = parseFloat(document.getElementById('loan-income').value)||0;
+  if(!name || isNaN(P) || isNaN(rate) || isNaN(years)){ alert('Enter name, principal, rate and tenure at minimum.'); return; }
+  loans.push({name,P,rate,years,fee,income});
+  document.getElementById('loan-name').value='';
+  document.getElementById('loan-principal').value='';
+  document.getElementById('loan-rate').value='';
+  document.getElementById('loan-tenure').value='';
+  document.getElementById('loan-fee').value='';
+  renderLoanEntries();
+  renderLoanResults();
+}
+function removeLoan(i){ loans.splice(i,1); renderLoanEntries(); renderLoanResults(); }
+function renderLoanEntries(){
+  document.getElementById('loan-entries').innerHTML = loans.map((l,i)=>
+    `<div class="entry-chip"><span class="name">${l.name}</span><span class="del" onclick="removeLoan(${i})">✕</span></div>`
+  ).join('');
+}
+function computeLoan(l){
+  const r = l.rate/1200; // monthly rate
+  const n = l.years*12;
+  const emi = r===0 ? l.P/n : l.P * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1);
+  const totalPaid = emi*n;
+  const totalInterest = totalPaid - l.P;
+  const feeAmt = l.P * l.fee/100;
+  const totalCost = totalPaid + feeAmt;
+  const emiToIncome = l.income>0 ? (emi/l.income)*100 : null;
+  let riskScore = 20; // base
+  if(emiToIncome!==null){
+    riskScore = emiToIncome<30 ? 20 + emiToIncome/2 : emiToIncome<40 ? 40 + (emiToIncome-30)*3 : 70 + Math.min(30,(emiToIncome-40)*2);
+  }
+  return {...l, emi, totalInterest, totalCost, emiToIncome, riskScore: Math.min(100,riskScore)};
+}
+function renderLoanResults(){
+  const el = document.getElementById('loan-results');
+  if(loans.length===0){
+    el.innerHTML = emptyState('Add loan offers on the left','Compare EMI, total cost, and affordability side by side.');
+    return;
+  }
+  const computed = loans.map(computeLoan).sort((a,b)=>a.totalCost-b.totalCost);
+  const cheapest = computed[0].name;
+  let rows = computed.map(l=>{
+    const band = riskBand(l.riskScore);
+    return `<tr class="${l.name===cheapest?'best':''}">
+      <td>${l.name}</td>
+      <td class="num">${fmt(l.emi,0)}</td>
+      <td class="num">${fmt(l.totalInterest,0)}</td>
+      <td class="num">${fmt(l.totalCost,0)}</td>
+      <td class="num">${l.emiToIncome!==null?fmt(l.emiToIncome,1)+'%':'—'}</td>
+      <td>${tag(band)}</td>
+    </tr>`;
+  }).join('');
+  let cards = computed.map(l=>{
+    const band = riskBand(l.riskScore);
+    return `<div class="rcard ${l.name===cheapest?'best':''}">
+      ${l.name===cheapest?'<div class="best-badge">LOWEST COST</div>':''}
+      <div class="rname">${l.name}</div>
+      <div class="rtype">EMI ₹${fmt(l.emi,0)}/mo</div>
+      <div class="gauge-wrap">
+        ${gauge(l.riskScore)}
+        <div class="gauge-num">
+          <div class="val" style="color:${band==='low'?'var(--teal)':band==='mod'?'var(--amber)':'var(--red)'}">${Math.round(l.riskScore)}</div>
+          <div class="lbl">strain / 100</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const top = computed[0];
+  const highStrain = computed.find(l=>l.emiToIncome!==null && l.emiToIncome>40);
+  let verdict = `<b>${top.name}</b> has the lowest total cost of borrowing at ₹${fmt(top.totalCost,0)} over the full tenure.`;
+  if(highStrain){ verdict += ` <span class="warn">Watch out: ${highStrain.name}'s EMI eats ${fmt(highStrain.emiToIncome,1)}% of monthly income — above the usual 40% comfort line lenders and advisors use.</span>`; }
+  el.innerHTML = `
+    <div class="card">
+      <h3>Comparison <small>// ranked by total cost of borrowing</small></h3>
+      <table>
+        <thead><tr><th>Offer</th><th class="num">EMI</th><th class="num">Total interest</th><th class="num">Total cost</th><th class="num">EMI/income</th><th>Risk</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="result-cards">${cards}</div>
+      <div class="verdict">${verdict}</div>
+    </div>`;
+}
+
+/* ================= BUSINESS ================= */
+let bizList = [];
+function addBusiness(){
+  const name = document.getElementById('biz-name').value.trim();
+  const ca = parseFloat(document.getElementById('biz-ca').value);
+  const cl = parseFloat(document.getElementById('biz-cl').value);
+  const debt = parseFloat(document.getElementById('biz-debt').value)||0;
+  const equity = parseFloat(document.getElementById('biz-equity').value);
+  const revenue = parseFloat(document.getElementById('biz-revenue').value);
+  const netincome = parseFloat(document.getElementById('biz-netincome').value);
+  const ebit = parseFloat(document.getElementById('biz-ebit').value);
+  const interest = parseFloat(document.getElementById('biz-interest').value)||0;
+  if(!name || isNaN(ca) || isNaN(cl) || isNaN(equity) || isNaN(revenue)){ alert('Enter at minimum: name, current assets, current liabilities, equity, and revenue.'); return; }
+  bizList.push({name,ca,cl,debt,equity,revenue,netincome,ebit,interest});
+  ['biz-name','biz-ca','biz-cl','biz-debt','biz-equity','biz-revenue','biz-netincome','biz-ebit','biz-interest'].forEach(id=>document.getElementById(id).value='');
+  renderBizEntries();
+  renderBizResults();
+}
+function removeBiz(i){ bizList.splice(i,1); renderBizEntries(); renderBizResults(); }
+function renderBizEntries(){
+  document.getElementById('biz-entries').innerHTML = bizList.map((b,i)=>
+    `<div class="entry-chip"><span class="name">${b.name}</span><span class="del" onclick="removeBiz(${i})">✕</span></div>`
+  ).join('');
+}
+function bandScore(val, lowMax, modMax, inverse=false){
+  // returns 0-100 risk score. by default lower val = riskier is false (higher ratio = safer), inverse flips it
+  if(!inverse){ // higher is safer (e.g. current ratio, interest coverage)
+    if(val>=modMax) return 15;
+    if(val>=lowMax) return 45;
+    return 80;
+  } else { // higher is riskier (e.g. debt-to-equity)
+    if(val<=lowMax) return 15;
+    if(val<=modMax) return 45;
+    return 80;
+  }
+}
+function computeBiz(b){
+  const currentRatio = b.cl!==0 ? b.ca/b.cl : null;
+  const debtEquity = b.equity!==0 ? b.debt/b.equity : null;
+  const netMargin = b.revenue!==0 ? (b.netincome/b.revenue)*100 : null;
+  const roe = b.equity!==0 ? (b.netincome/b.equity)*100 : null;
+  const intCoverage = b.interest>0 ? b.ebit/b.interest : (b.interest===0 && !isNaN(b.ebit) ? Infinity : null);
+
+  const scores = [];
+  if(currentRatio!==null) scores.push(bandScore(currentRatio,1,1.5,false));
+  if(debtEquity!==null) scores.push(bandScore(debtEquity,1,2,true));
+  if(netMargin!==null) scores.push(bandScore(netMargin,5,10,false));
+  if(roe!==null) scores.push(bandScore(roe,8,15,false));
+  if(intCoverage!==null && isFinite(intCoverage)) scores.push(bandScore(intCoverage,1.5,4,false));
+
+  const riskScore = scores.length ? scores.reduce((a,c)=>a+c,0)/scores.length : 50;
+  return {...b, currentRatio, debtEquity, netMargin, roe, intCoverage, riskScore};
+}
+function renderBizResults(){
+  const el = document.getElementById('biz-results');
+  if(bizList.length===0){
+    el.innerHTML = emptyState("Add a company's figures on the left","Get liquidity, leverage, profitability and coverage ratios with an overall risk read.");
+    return;
+  }
+  const computed = bizList.map(computeBiz).sort((a,b)=>a.riskScore-b.riskScore);
+  const safest = computed[0].name;
+  let rows = computed.map(b=>{
+    const band = riskBand(b.riskScore);
+    return `<tr class="${b.name===safest?'best':''}">
+      <td>${b.name}</td>
+      <td class="num">${b.currentRatio!==null?fmt(b.currentRatio,2):'—'}</td>
+      <td class="num">${b.debtEquity!==null?fmt(b.debtEquity,2):'—'}</td>
+      <td class="num">${b.netMargin!==null?fmt(b.netMargin,1)+'%':'—'}</td>
+      <td class="num">${b.roe!==null?fmt(b.roe,1)+'%':'—'}</td>
+      <td class="num">${b.intCoverage!==null?(isFinite(b.intCoverage)?fmt(b.intCoverage,1)+'x':'∞'):'—'}</td>
+      <td>${tag(band)}</td>
+    </tr>`;
+  }).join('');
+  let cards = computed.map(b=>{
+    const band = riskBand(b.riskScore);
+    return `<div class="rcard ${b.name===safest?'best':''}">
+      ${b.name===safest?'<div class="best-badge">STRONGEST</div>':''}
+      <div class="rname">${b.name}</div>
+      <div class="rtype">Current ratio ${b.currentRatio!==null?fmt(b.currentRatio,2):'—'} · D/E ${b.debtEquity!==null?fmt(b.debtEquity,2):'—'}</div>
+      <div class="gauge-wrap">
+        ${gauge(b.riskScore)}
+        <div class="gauge-num">
+          <div class="val" style="color:${band==='low'?'var(--teal)':band==='mod'?'var(--amber)':'var(--red)'}">${Math.round(b.riskScore)}</div>
+          <div class="lbl">risk / 100</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const top = computed[0];
+  const weakest = computed[computed.length-1];
+  let verdict = `<b>${top.name}</b> screens as the financially strongest of the group, with a composite risk score of ${Math.round(top.riskScore)}/100.`;
+  if(computed.length>1 && weakest.riskScore>66){
+    verdict += ` <span class="warn">${weakest.name} is flagged high risk — check its current ratio and debt-to-equity closely before relying on it.</span>`;
+  }
+  el.innerHTML = `
+    <div class="card">
+      <h3>Comparison <small>// liquidity, leverage, profitability, coverage</small></h3>
+      <table>
+        <thead><tr><th>Entity</th><th class="num">Current ratio</th><th class="num">D/E</th><th class="num">Net margin</th><th class="num">ROE</th><th class="num">Int. coverage</th><th>Risk</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="result-cards">${cards}</div>
+      <div class="verdict">${verdict}</div>
+    </div>`;
+}
+
+function emptyState(big, small){
+  return `<div class="empty-state"><div class="big">${big}</div><div>${small}</div></div>`;
+}
+
+/* initial render */
+renderInvResults(); renderLoanResults(); renderBizResults();
+</script>
+</body>
+</html>
