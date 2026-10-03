@@ -2,7 +2,7 @@
 
 A single-file, browser-based tool for screening financial risk. Paste in numbers, get a ranked comparison with a risk score — no backend, no data leaves your browser.
 
-**[Live demo](#)** — *(fill in once GitHub Pages is enabled, see below)*
+**[Live demo](https://kanavvnegi.github.io/Finance-Risk-Analyzer/finance-risk-analyzer.html)**
 
 ## What it does
 
