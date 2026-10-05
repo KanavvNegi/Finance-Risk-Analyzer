@@ -44,12 +44,3 @@ finance-risk-analyzer.html   # the entire app (HTML + CSS + JS, no build step)
 README.md                    # this file
 ```
 
-## Roadmap ideas
-
-- [ ] Export comparison results to PDF/Excel
-- [ ] Persist entries across sessions (localStorage)
-- [ ] Insurance policy comparison module
-
-## License
-
-MIT (or your preference — update this section).
